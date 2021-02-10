@@ -1,0 +1,12 @@
+name: App2
+title: App2
+username:
+account: lebcel-proj-immo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 2536918
+bundleId: 3352689
+url: https://lebcel-proj-immo.shinyapps.io/App2/
+when: 1593902604.03643
+asMultiple: FALSE
+asStatic: FALSE
