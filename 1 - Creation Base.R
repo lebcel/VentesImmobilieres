@@ -15,11 +15,13 @@ library(R.utils)
 
 options( "digits"=1, "scipen"=100)
 
+setwd(dir = "C:/Users/lebce/OneDrive/Documents/3 - Projets/GitHub/VentesImmob/")
+  
 # -----------------------------------------------------
 # Import donnees
 # -----------------------------------------------------
 don <-
-  list.files("./",
+  list.files("./Data/",
              full.names = TRUE) %>% 
   tolower() %>% 
   .[stringr::str_detect(., "valeursfoncieres")] %>% 
@@ -31,6 +33,7 @@ str(don)
 # -----------------------------------------------------
 # Filtre pour alléger la table
 don<-don[don$Nature.mutation=="Vente" & don$Type.local %in% c("Maison","Appartement") & !is.na(don$Valeur.fonciere) & don$Valeur.fonciere>0,,]
+
 # Suppression des doublons
 don<-don[,param:=duplicated(paste(Date.mutation,Valeur.fonciere,Code.commune, sep = "", collapse = NULL))] 
 don<-don[param==FALSE,]
@@ -63,7 +66,7 @@ nrow(don)
 
 # -----------------------------------------------------
 # Dynamique des entreprises
-ficdynvilles<- read_xls("./MDB-INSEE-V2.xls") %>% as.data.table()
+ficdynvilles<- read_xls("./Data/MDB-INSEE-V2.xls") %>% as.data.table()
 setindex(don, CODGEO)
 setindex(ficdynvilles, CODGEO)
 sum(duplicated(ficdynvilles$CODGEO)) # Verifie s'il y a des doublons
@@ -74,10 +77,9 @@ nrow(don)
 
 # -----------------------------------------------------
 # Equipements
-ficEquip<- read_delim("./20180110_RES_FichesEquipements.csv",delim = ";", quote = "'") %>% as.data.table()
+ficEquip<- read_delim("./Data/20180110_RES_FichesEquipements.csv",delim = ";", quote = "'") %>% as.data.table()
 ficEquip[,EquiCode:=paste("Equ_",EquipementTypeCode,sep="",collapse = NULL)]
 ficEquip<- dcast(ficEquip,ComInsee~EquiCode,value.var="EquAnneeService")
-# !!!! Ici il faudrait mettre l'année minimum dans les valeurs du tableau au lieu du nombre mais je ne sais pas faire j'ai donc laissé le nombre
 setnames(ficEquip,"ComInsee","CODGEO")
 setindex(ficEquip, CODGEO)
 sum(duplicated(ficEquip$CODGEO)) # Verifie s'il y a des doublons
@@ -88,10 +90,9 @@ nrow(don)
 
 # -----------------------------------------------------
 # Activites
-ficEquipActe<- read_delim("./20180110_RES_FichesEquipementsActivites.csv",delim = ";", quote = "'") %>% as.data.table()
+ficEquipActe<- read_delim("./Data/20180110_RES_FichesEquipementsActivites.csv",delim = ";", quote = "'") %>% as.data.table()
 ficEquipActe[,ActCode:=paste("Act_",ActCode,sep="",collapse = NULL)]
 ficEquipActe<- dcast(ficEquipActe,ComInsee~ActCode,value.var="EquNbEquIdentique")
-# !!!! Ici il faudrait mettre l'année minimum dans les valeurs du tableau au lieu du nombre mais je ne sais pas faire j'ai donc laissé le nombre
 setnames(ficEquipActe,"ComInsee","CODGEO")
 setindex(ficEquipActe, CODGEO)
 sum(duplicated(ficEquipActe$CODGEO)) # Verifie s'il y a des doublons
@@ -102,7 +103,7 @@ nrow(don)
 
 # -----------------------------------------------------
 # Installations
-ficInstal<- read_delim("./20180110_RES_FichesInstallations.csv",delim = ";", quote = "'") %>% as.data.table()
+ficInstal<- read_delim("./Data/20180110_RES_FichesInstallations.csv",delim = ";", quote = "'") %>% as.data.table()
 ficInstal[,LibInstal:=case_when(
   InsPartLibelle=="Non"~"Inst_Non",
   InsPartLibelle=="Complexe sportif"~"Inst_ComplSport",
@@ -118,8 +119,6 @@ ficInstal[,LibInstal:=case_when(
 )]
 
 ficInstal<- dcast(ficInstal,ComInsee~LibInstal,value.var="InsDateCreation")
-# !!!! Ici il faudrait mettre l'année minimum dans les valeurs du tableau au lieu du nombre mais je ne sais pas faire j'ai donc laissé le nombre
-# => Je n'ai pas intégré les transports autours des installations. Est ce que ça aurait une influence?
 setnames(ficInstal,"ComInsee","CODGEO")
 sum(duplicated(ficInstal$CODGEO))
 don <- ficInstal[don, on = list(CODGEO)]
@@ -127,162 +126,152 @@ don <- ficInstal[don, on = list(CODGEO)]
 nrow(don)
 # 3852389
 
-# Tests
-# temp<-ficInstal[ficInstal$ComInsee==78117,,]
-# temp<-don[don$CODGEO==78117,,]
-
 # -----------------------------------------------------
 # Intégration des données économiques
 
 # Consommation des ménages mensuel
-ficConsoMenaMens<- read_delim("./DataEco/Conso menages - mens.csv",delim = ";", quote = "'") %>% as.data.table()
+ficConsoMenaMens<- read_delim("./Data/DataEco/Conso menages - mens.csv",delim = ";", quote = "'") %>% as.data.table()
 don <- ficConsoMenaMens[don, on = list(DTE)]
 
 # Emplois salariés trimestriel
-ficEmploiSalTrim<- read_delim("./DataEco/Emplois salaries - trim.csv",delim = ";", quote = "'") %>% as.data.table()
+ficEmploiSalTrim<- read_delim("./Data/DataEco/Emplois salaries - trim.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficEmploiSalTrim,"DTE","DTE_TRIM")
 don <- ficEmploiSalTrim[don, on = list(DTE_TRIM)]
 
 # Indice cout de la construction trimestriel
-ficICCTrim<- read_delim("./DataEco/ICC - trim.csv",delim = ";", quote = "'") %>% as.data.table()
+ficICCTrim<- read_delim("./Data/DataEco/ICC - trim.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficICCTrim,"DTE","DTE_TRIM")
 don <- ficICCTrim[don, on = list(DTE_TRIM)]
 
 # Indice climat des affaires mensuel
-ficClimAffMens<- read_delim("./DataEco/Ind Climat Affaires - mois.csv",delim = ";", quote = "'") %>% as.data.table()
+ficClimAffMens<- read_delim("./Data/DataEco/Ind Climat Affaires - mois.csv",delim = ";", quote = "'") %>% as.data.table()
 don <- ficClimAffMens[don, on = list(DTE)]
 
 # Indice du climat de l'emploi mensuel
-ficClimEmplMens<- read_delim("./DataEco/Ind Climat Emploi - mois.csv",delim = ";", quote = "'") %>% as.data.table()
+ficClimEmplMens<- read_delim("./Data/DataEco/Ind Climat Emploi - mois.csv",delim = ";", quote = "'") %>% as.data.table()
 don <- ficClimEmplMens[don, on = list(DTE)]
 
 # Indice de confiance des ménages mensuel
-ficConfMenaMoisPays<- read_delim("./DataEco/Indice confiance conso menages - mois - pays.csv",delim = ";", quote = "'") %>% as.data.table()
+ficConfMenaMoisPays<- read_delim("./Data/DataEco/Indice confiance conso menages - mois - pays.csv",delim = ";", quote = "'") %>% as.data.table()
 don <- ficConfMenaMoisPays[don, on = list(DTE)]
 
 # Indice de confiance des ménages mensuel
-ficConfMenaMois<- read_delim("./DataEco/Indice confiance conso menages - mois.csv",delim = ";", quote = "'") %>% as.data.table()
+ficConfMenaMois<- read_delim("./Data/DataEco/Indice confiance conso menages - mois.csv",delim = ";", quote = "'") %>% as.data.table()
 ficConfMenaMois<-ficConfMenaMois[,-"CodEnqMenagesMens",]
 don <- ficConfMenaMois[don, on = list(DTE)]
 
 # Indice des prix des logements trimestriel
-ficPrixLogTrim<- read_delim("./DataEco/Indice prix logements - trim.csv",delim = ";", quote = "'") %>% as.data.table()
+ficPrixLogTrim<- read_delim("./Data/DataEco/Indice prix logements - trim.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficPrixLogTrim,"DTE","DTE_TRIM")
 ficPrixLogTrim<-ficPrixLogTrim[,-"CodPrixLogemB2015Trim",]
 don <- ficPrixLogTrim[don, on = list(DTE_TRIM)]
 
 # Indice du volume des ventes mensuel
-ficVolVentesMens<- read_delim("./DataEco/Indice volume ventes - mens.csv",delim = ";", quote = "'") %>% as.data.table()
+ficVolVentesMens<- read_delim("./Data/DataEco/Indice volume ventes - mens.csv",delim = ";", quote = "'") %>% as.data.table()
 ficVolVentesMens<-ficVolVentesMens[,-"CodVolVentesMens",]
 don <- ficVolVentesMens[don, on = list(DTE)]
 
 # Inflation mensuel
-ficInflationMens<- read_delim("./DataEco/Inflation - Mens.csv",delim = ";", quote = "'") %>% as.data.table()
+ficInflationMens<- read_delim("./Data/DataEco/Inflation - Mens.csv",delim = ";", quote = "'") %>% as.data.table()
 ficInflationMens<-ficInflationMens[,-"CodInflaB2015Mens",]
 don <- ficInflationMens[don, on = list(DTE)]
 
 # Indice des prix à la consommation mensuel
-ficIPCMens<- read_delim("./DataEco/IPC - Mens.csv",delim = ";", quote = "'") %>% as.data.table()
+ficIPCMens<- read_delim("./Data/DataEco/IPC - Mens.csv",delim = ";", quote = "'") %>% as.data.table()
 ficIPCMens<-ficIPCMens[,-"CodPxConsoB2015Mens",]
 don <- ficIPCMens[don, on = list(DTE)]
 
 # Indice de reference des loyers trimestriel
-ficIRLTrim<- read_delim("./DataEco/IRL - trim.csv",delim = ";", quote = "'") %>% as.data.table()
+ficIRLTrim<- read_delim("./Data/DataEco/IRL - trim.csv",delim = ";", quote = "'") %>% as.data.table()
 ficIRLTrim<-ficIRLTrim[,-"CodRefLoyerB100Trim",]
 setnames(ficIRLTrim,"DTE","DTE_TRIM")
 don <- ficIRLTrim[don, on = list(DTE_TRIM)]
 
 # PIB annuel
-ficPIBAnn<- read_delim("./DataEco/PIB - annee - Base 2014.csv",delim = ";", quote = "'") %>% as.data.table()
+ficPIBAnn<- read_delim("./Data/DataEco/PIB - annee - Base 2014.csv",delim = ";", quote = "'") %>% as.data.table()
 ficPIBAnn<-ficPIBAnn[,-"CodPIBMtB2014An",]
 ficPIBAnn<-ficPIBAnn[,DTE_ANNEE:=as.character(DTE),]
 ficPIBAnn<-ficPIBAnn[,-"DTE",]
 don <- ficPIBAnn[don, on = list(DTE_ANNEE)]
 
 # PIB trimestriel
-ficPIBTrim<- read_delim("./DataEco/PIB - trim.csv",delim = ";", quote = "'") %>% as.data.table()
+ficPIBTrim<- read_delim("./Data/DataEco/PIB - trim.csv",delim = ";", quote = "'") %>% as.data.table()
 ficPIBTrim<-ficPIBTrim[,-"CodPIBB2014Trim",]
 setnames(ficPIBTrim,"Période","DTE_TRIM")
 don <- ficPIBTrim[don, on = list(DTE_TRIM)]
 
 # Taux de chomage annuel + sexe
-ficTxChoAnnSex<- read_delim("./DataEco/Taux chomage - annee - sex.csv",delim = ";", quote = "'") %>% as.data.table()
+ficTxChoAnnSex<- read_delim("./Data/DataEco/Taux chomage - annee - sex.csv",delim = ";", quote = "'") %>% as.data.table()
 ficTxChoAnnSex<-ficTxChoAnnSex[,DTE_ANNEE:=as.character(DTE),]
 ficTxChoAnnSex<-ficTxChoAnnSex[,-"DTE",]
 don <- ficTxChoAnnSex[don, on = list(DTE_ANNEE)]
 
 # Taux de chomage trimestriel
-ficTxChoTrim<- read_delim("./DataEco/Taux chomage - trim.csv",delim = ";", quote = "'") %>% as.data.table()
+ficTxChoTrim<- read_delim("./Data/DataEco/Taux chomage - trim.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficTxChoTrim,"DTE","DTE_TRIM")
 don <- ficTxChoTrim[don, on = list(DTE_TRIM)]
 
 # Depots / Emprunts / Refinancement journalier
-ficWebStat1<- read_delim("./DataEco/Webstat_Export_20200309 1.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat1<- read_delim("./Data/DataEco/Webstat_Export_20200309 1.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat1,"DTE","Date.mutation")
 don <- ficWebStat1[don, on = list(Date.mutation)]
 
 # Taux Euribor journalier
-ficWebStat2<- read_delim("./DataEco/Webstat_Export_20200309 2.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat2<- read_delim("./Data/DataEco/Webstat_Export_20200309 2.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat2,"DTE","Date.mutation")
 don <- ficWebStat2[don, on = list(Date.mutation)]
 
 # Euribor journalier
-ficEuribor<- read_excel("./DataEco/EURIBOR.xlsx") %>% as.data.table()
+ficEuribor<- read_excel("./Data/DataEco/EURIBOR.xlsx") %>% as.data.table()
 setnames(ficEuribor,"DTE","Date.mutation")
 don <- ficEuribor[don, on = list(Date.mutation)]
 
 # Cours Or journalier
-ficWebStat3<- read_delim("./DataEco/Webstat_Export_20200309 3.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat3<- read_delim("./Data/DataEco/Webstat_Export_20200309 3.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat3,"DTE","Date.mutation")
 don <- ficWebStat3[don, on = list(Date.mutation)]
 
 # Taux moyens mensuel
-ficWebStat4<- read_delim("./DataEco/Webstat_Export_20200309 4.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat4<- read_delim("./Data/DataEco/Webstat_Export_20200309 4.csv",delim = ";", quote = "'") %>% as.data.table()
 don <- ficWebStat4[don, on = list(DTE)]
 
 # Taux avances sur titres / journalier
-ficWebStat5<- read_delim("./DataEco/Webstat_Export_20200309 5.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat5<- read_delim("./Data/DataEco/Webstat_Export_20200309 5.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat5,"DTE","Date.mutation")
 don <- ficWebStat5[don, on = list(Date.mutation)]
 
 # Emprunt Phare 10 ans / Taux bons du tresor / taux OAT journalier
-ficWebStat6<- read_delim("./DataEco/Webstat_Export_20200309 6.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat6<- read_delim("./Data/DataEco/Webstat_Export_20200309 6.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat6,"DTE","Date.mutation")
 don <- ficWebStat6[don, on = list(Date.mutation)]
 
 # Taux de l'Echéance Constante journalier
-ficWebStat7<- read_delim("./DataEco/Webstat_Export_20200309 7.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat7<- read_delim("./Data/DataEco/Webstat_Export_20200309 7.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat7,"DTE","Date.mutation")
 don <- ficWebStat7[don, on = list(Date.mutation)]
 
 # Indice taux des avances sur titres journalier
-ficWebStat8<- read_delim("./DataEco/Webstat_Export_20200309 8.csv",delim = ";", quote = "'") %>% as.data.table()
+ficWebStat8<- read_delim("./Data/DataEco/Webstat_Export_20200309 8.csv",delim = ";", quote = "'") %>% as.data.table()
 setnames(ficWebStat8,"DTE","Date.mutation")
 don <- ficWebStat8[don, on = list(Date.mutation)]
 
 # Indices conditions marches financiers : Inflation / Tx change / Tx interets / Incertitudes mensuel
-ficCondMarFin<- read_excel("./DataEco/Indice cond marches fin.xlsx") %>% as.data.table()
+ficCondMarFin<- read_excel("./Data/DataEco/Indice cond marches fin.xlsx") %>% as.data.table()
 don <- ficCondMarFin[don, on = list(DTE)]
 
 # Taux directeurs mensuel
-ficTxDirecteur<- read_excel("./DataEco/Taux directeurs.xlsx") %>% as.data.table()
+ficTxDirecteur<- read_excel("./Data/DataEco/Taux directeurs.xlsx") %>% as.data.table()
 don <- ficTxDirecteur[don, on = list(DTE)]
 
 # Taux Interet Legal trimestriel
-ficTxIntLeg<- read_excel("./DataEco/Taux interet legal.xlsx") %>% as.data.table()
+ficTxIntLeg<- read_excel("./Data/DataEco/Taux interet legal.xlsx") %>% as.data.table()
 setnames(ficTxIntLeg,"DTE","DTE_TRIM")
 don <- ficTxIntLeg[don, on = list(DTE_TRIM)]
 
 # Taux Usure trimestriel
-ficTxUsure<- read_excel("./DataEco/Taux usure.xlsx") %>% as.data.table()
+ficTxUsure<- read_excel("./Data/DataEco/Taux usure.xlsx") %>% as.data.table()
 setnames(ficTxUsure,"DTE","DTE_TRIM")
 don <- ficTxUsure[don, on = list(DTE_TRIM)]
-
-# Taux chomage par ville
-ficTxChoAnnVille<- read_excel("./DataEco/Taux chomage - trim - ville.xls") %>% as.data.table()
-# !!!!! Non integré car incomplet et je ne sais pas comment le lier
-# temp<-ficTxChoAnnVille[LIBZE2010=="Dreux",,]
-
 
 # -----------------------------------------------------
 # Suppression des tables importees
@@ -290,4 +279,4 @@ remove(list=ls(pat="^fic"))
 
 # -----------------------------------------------------
 # Sauvegarde de la base
-save(don,file="don.RData") 
+save(don,file="./Data/don.RData") 

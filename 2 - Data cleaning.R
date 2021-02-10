@@ -18,18 +18,16 @@ options( "digits"=1, "scipen"=100)
 # -----------------------------------------------------
 # Chargement de la base
 # -----------------------------------------------------
-system.time(load("don.RData"))
+system.time(load("./Data/don.RData"))
 
 # -----------------------------------------------------
 # Analyses
 # -----------------------------------------------------
 
-# Detection des NA par variable + Suppression des variables vides
+# Detection des NA par variable 
 stats <- as.data.frame(cbind(sapply(don,function(x) sum(is.na(x))),
                              sapply(don,function(x) sum(is.na(x))/nrow(don)*100),
-                             sapply(don,function(x) nrow(don)-sum(is.na(x)))
-)
-)
+                             sapply(don,function(x) nrow(don)-sum(is.na(x)))))
 stats <- stats[order(-stats$V2),]
 
 stats<-don %>% group_by(Code.type.local,Surface.terrain) %>% summarise(n=n())
@@ -66,10 +64,6 @@ stats_ori <- don  %>% summarise(n=n(),moy=mean(Valeur.fonciere),
                                 Q3=quantile(Valeur.fonciere,0.75),
                                 Max=max(Valeur.fonciere),
                                 SD=sd(Valeur.fonciere))
-
-# Percentiles
-a <- quantile(x=don$Valeur.fonciere,probs=seq(0,1,0.01))
-View(a)
 
 # Analyse 1er percentile pour determiner la borne min
 Perc01 <- quantile(x=don$Valeur.fonciere,probs=0.01)
@@ -109,7 +103,7 @@ p
 
 # Valeur.fonciere : Selection finale
 don <- don[don$Valeur.fonciere>10500 & don$Valeur.fonciere<4674998,,]
-save(don,file="don.RData") 
+save(don,file="./Data/don.RData") 
 nrow(don)
 # 3820313
 
@@ -206,9 +200,6 @@ temp <- as.data.frame(sapply(don[,select_if(select(don,starts_with("Ind")), is_c
 
 # Convertit en num + change la decimale des variables char qui commencent par Ind
 don<-cbind(don[,colnames(temp):=NULL],temp) # Remplace les colonnes converties
-save(don,file="don.RData") 
-
-str(don)
 
 # Affichage des variables numériques et des variables caractere dans 2 tables distinctes
 VarNum <- don[, .SD, .SDcols = sapply(don, is.numeric)]
@@ -228,16 +219,18 @@ colvides<-stats[stats$V2>9,]
 View(stats)
 
 # Suppression des variables vides : 
-# je supprime uniquement les variables ajoutées pas les variables de la base initiale ayant des manquants 
-# car elles peuvent servir à corriger d'autres variables
 don$Prefixe.de.section <- NULL
 don$IndOpRefiWSDebMois <- NULL
 don$IndFacDepotWSDebMois <- NULL
 don$IndTxUsurePartM10ansTrim <- NULL
 don$IndTxUsurePartM10a20ansTrim <- NULL
 don$IndTxUsurePartM20ansTrim <- NULL
-
-# Analyse des variables incompletes
+don$IndFacPretMens<-NULL
+don$IndTxRefinMens<-NULL
+don$IndFacEmpruntWSJour<-NULL
+don$IndOpRefiWSJour<-NULL
+don$IndFacEmpruntWSDebMois<-NULL
+don$IndOpRefiWSDebMois<-NULL
 
 # Surface terrain
 temp <- don[is.na(Surface.terrain),,]
@@ -250,9 +243,10 @@ don <- don[,-don$F.Surface.terrain,]
 
 don$Surface.terrain[is.na(don$Surface.terrain)] <- 0
 
-# Concl : Surface terrain absente pour 94% des appartements et 5% des maisons. On suppose que les manquants correspondent à des lots sans terrain. On recode les NA par 0. 
+# Concl : Surface terrain absente pour 94% des appartements et 5% des maisons. 
+# On suppose que les manquants correspondent à des lots sans terrain. On recode les NA par 0. 
 
 # -----------------------------------------------------
 # Sauvegarde de la base
 don3 <- don
-save(don3,file="don.RData") 
+save(don3,file="./Data/don3.RData") 
