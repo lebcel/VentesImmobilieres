@@ -22,28 +22,19 @@ options( "digits"=1, "scipen"=100)
 # Import
 # -----------------------------------------------------
 
-load("don3.RData")
-
-don3$IndFacPretMens<-NULL
-don3$IndTxRefinMens<-NULL
-don3$IndFacEmpruntWSJour<-NULL
-don3$IndOpRefiWSJour<-NULL
-don3$IndFacEmpruntWSDebMois<-NULL
-don3$IndOpRefiWSDebMois<-NULL
+load("./Data/don3.RData")
 
 type <- sapply(don3,class)
-don4<-don3[,type %in% c("numeric","integer")]
+don4 <- don3[,type %in% c("numeric","integer")]
 
 #Y
-don4.cr<-don4
-
-don4.cr<-don4.cr[,order(names(don4.cr))]
+don4<-don4[,order(names(don4))]
 
 set.seed(1234)
 library(caret)
-a <- createDataPartition(don4.cr$Valeur.fonciere,p=0.8,list=F)
-donapp <- don4.cr[a,]
-dontest <- don4.cr[-a,]
+a <- createDataPartition(don4$Valeur.fonciere,p=0.8,list=F)
+donapp <- don4[a,]
+dontest <- don4[-a,]
 dim(donapp)
 dim(dontest)
 
@@ -176,7 +167,7 @@ MLmetrics::RMSE(exp(predicted1),exp(dontesttemp[,n]))
 
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------
-# Regression lineaire
+# Autres modeles de boosting
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
